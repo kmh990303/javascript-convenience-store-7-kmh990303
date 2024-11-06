@@ -1,5 +1,6 @@
 import { MissionUtils } from "@woowacourse/mission-utils"
 
+
 export const OutputView = {
     async printIntro() {
         await MissionUtils.Console.print('안녕하세요. W편의점입니다.');
@@ -8,7 +9,7 @@ export const OutputView = {
 
     async printProducts(products) {
         for (const product of products) {
-            await MissionUtils.Console.print(`- ${product.name} ${product.price}원 ${product.quantity} ${product.promotion || ''}\n`.trim());
+            await MissionUtils.Console.print(`- ${product.name} ${(product.price).toLocaleString()}원 ${product.quantity}개 ${product.promotion}\n`.trim());
         }
     },
 
