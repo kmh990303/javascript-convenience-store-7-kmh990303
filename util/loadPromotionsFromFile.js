@@ -7,7 +7,7 @@ export async function loadPromotionsFromFile(filePath) {
 
     return lines.map(line => {
         const [name, buy, get, startDate, endDate] = line.split(',');
-        
-        return { name, buy: +buy, get: +get, startDate, endDate };
+
+        return { name, buy: +buy, get: +get, startDate: new Date(startDate), endDate: new Date(endDate) };
     })
 }

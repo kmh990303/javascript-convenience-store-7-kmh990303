@@ -1,13 +1,22 @@
 import { OutputView } from "./OutputView.js";
 import { loadProductsFromFile } from "../util/loadProductsFromFile.js";
+import { loadPromotionsFromFile } from "../util/loadPromotionsFromFile.js";
+import { Product } from "./Product.js";
+import { Promotion } from "./Promotion.js";
+
+export const productsList = [];
 
 class App {
-  async run() { //상품 클래스 만들어야 함
+  async run() {
     const products = await loadProductsFromFile("products.md");
+    // const promotions = await loadPromotionsFromFile("promotions.md");
+
     products.forEach((product) => {
-      product.promotion === 'no' ? product.promotion = '' : product.promotion;
+      productsList.push(new Product(product.name, product.price, product.quantity, product.promotion));
     })
-    OutputView.printProducts(products);
+
+    await OutputView.printIntro();
+    await OutputView.printProducts(productsList);
   }
 }
 

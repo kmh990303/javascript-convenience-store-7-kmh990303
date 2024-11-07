@@ -4,12 +4,17 @@ import { MissionUtils } from "@woowacourse/mission-utils"
 export const OutputView = {
     async printIntro() {
         await MissionUtils.Console.print('안녕하세요. W편의점입니다.');
-        await MissionUtils.Console.print('현재 보유하고 있는 상품입니다.');
+        await MissionUtils.Console.print('현재 보유하고 있는 상품입니다.\n');
     },
 
-    async printProducts(products) {
-        for (const product of products) {
-            await MissionUtils.Console.print(`- ${product.name} ${(product.price).toLocaleString()}원 ${product.quantity}개 ${product.promotion}\n`.trim());
+    async printProducts(productsList) {
+        for (const product of productsList) {
+            const name = product.getProdName();
+            const price = product.getProdPrice().toLocaleString();
+            const quantity = product.getProdQuantity() === 0 ? '재고 없음' : `${product.getProdQuantity()}개`;
+            const promotion = product.getProdPromotion().includes('null') ? '' : product.getProdPromotion();
+
+            await MissionUtils.Console.print(`- ${name} ${price}원 ${quantity} ${promotion}`);
         }
     },
 

@@ -12,8 +12,6 @@ export async function loadProductsFromFile(filename) {
     return lines.map(line => {
         let [name, price, quantity, promotion] = line.split(',');
 
-        console.log(promotion);
-
         return {
             name,
             price: parseInt(price, 10),
