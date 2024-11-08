@@ -24,4 +24,16 @@ export class Promotion {
         }
         return 0;
     }
+
+    getPromName() {
+        return this.#name;
+    }
+
+    giveBuy() {
+        return this.#buy;
+    }
+
+    giveGet() {
+        return this.#get;
+    }
 }

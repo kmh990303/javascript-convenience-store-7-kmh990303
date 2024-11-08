@@ -11,6 +11,15 @@ export class Product {
         this.#promotion = promotion;
     }
 
+    reduceQuantity(amount) {
+        if (this.#quantity >= amount) this.#quantity -= amount;
+    }
+
+    isRemainProduct(amount) {
+        return this.#quantity >= amount;
+    }
+
+
     checkPromotion() {
         if (this.#promotion.includes('탄산2+1')) return { buy: 2, get: 1 };
         if (this.#promotion.includes('MD추천상품')) return { buy: 1, get: 1 };

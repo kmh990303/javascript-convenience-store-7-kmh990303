@@ -16,6 +16,7 @@ export const OutputView = {
 
             await MissionUtils.Console.print(`- ${name} ${price}원 ${quantity} ${promotion}`);
         }
+        await MissionUtils.Console.print('');
     },
 
     async printBuyProductsList(buyProductsList) {
