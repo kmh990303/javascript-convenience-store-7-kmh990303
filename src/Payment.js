@@ -7,11 +7,39 @@ export class Payment {
     #membershipDiscount;
     #totalNonPromotionAmount;
 
+    #resultQuantity;
+    #resultTotalAmount;
+    #resultPromDiscount;
+    #resultMembershipDiscount;
+    #resultHaveToPay;
+
+    #PromotionItemsList;
+
     constructor() {
         this.#totalPurchaseAmount = 0;
         this.#promotionDiscount = 0;
         this.#membershipDiscount = 0;
         this.#totalNonPromotionAmount = 0;
+
+        this.#resultQuantity = 0;
+        this.#resultTotalAmount = 0;
+        this.#resultPromDiscount = 0;
+        this.#resultMembershipDiscount = 0;
+        this.#resultHaveToPay = 0;
+
+        this.#PromotionItemsList = [];
+    }
+
+    addPromotionItems(prodName, prodPromotionCount) {
+        this.#PromotionItemsList.push([prodName, prodPromotionCount]);
+    }
+
+    getPromotionItems() {
+        return this.#PromotionItemsList;
+    }
+
+    addPurchaseCount(quantity) {
+        this.#resultQuantity += quantity;
     }
 
     addPurchaseAmount(amount) {
@@ -27,10 +55,38 @@ export class Payment {
     }
 
     calculateMembershipDiscount() {
-        return Math.min(this.#totalNonPromotionAmount * MEMBERSHIP_DISCOUNT_RATE, MAX_MEMBERSHIP_DISCOUNT);
+        this.#resultMembershipDiscount = Math.min(this.#totalNonPromotionAmount * MEMBERSHIP_DISCOUNT_RATE, MAX_MEMBERSHIP_DISCOUNT);
+    }
+
+    initMembershipDiscount() {
+        this.#resultMembershipDiscount = 0;
     }
 
     calculateFinalAmount() {
-        return this.#totalPurchaseAmount - this.#promotionDiscount - this.#membershipDiscount;
+        this.#resultHaveToPay = this.#totalPurchaseAmount - this.#promotionDiscount - this.#membershipDiscount;
+    }
+
+    IsNotZeroTotalNonPromotionAmount() {
+        return this.#totalNonPromotionAmount !== 0 ? true : false;
+    }
+
+    getResultQuantity() {
+        return this.#resultQuantity;
+    }
+
+    getResultTotalAmount() {
+        return this.#resultTotalAmount;
+    }
+
+    getResultPromDiscount() {
+        return this.#resultPromDiscount;
+    }
+
+    getResultMembershipDiscount() {
+        return this.#resultMembershipDiscount;
+    }
+
+    getResultHaveToPay() {
+        return this.#resultHaveToPay
     }
 }

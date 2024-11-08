@@ -26,24 +26,25 @@ export const OutputView = {
         }
     },
 
-    async printGetPromotionsList(getPromotionsList) {
+    async printGetPromotionsList(PromotionItemsList) {
         await MissionUtils.Console.print('=============증	정===============\n');
-        for (const promotion of getPromotionsList) {
-            await MissionUtils.Console.print(`${promotion.name}		${promotion.quantity}\n`)
+        for (const [name, quantity] of PromotionItemsList) {
+            await MissionUtils.Console.print(`${name}		${quantity}\n`)
         }
+        await MissionUtils.Console.print('====================================\n');
     },
 
-    async printPayResult(priceList) {
-        await MissionUtils.Console.print(`총구매액		${priceList.quantity}	${(priceList.price).toLocaleString()}\n`);
-        await MissionUtils.Console.print(`행사할인			-${(priceList.totalDiscount.toLocaleString())}\n`);
-        await MissionUtils.Console.print(`멤버십할인			-${(priceList.memberDiscount).toLocaleString()}\n`);
-        await MissionUtils.Console.print(`내실돈			 ${(priceList.totalChange).toLocaleString()}\n`);
+    async printPayResult(payment) {
+        await MissionUtils.Console.print(`총구매액		${payment.getResultQuantity()}	${(payment.getResultTotalAmount()).toLocaleString()}\n`);
+        await MissionUtils.Console.print(`행사할인			-${(payment.getResultPromDiscount().toLocaleString())}\n`);
+        await MissionUtils.Console.print(`멤버십할인			-${(payment.getResultMembershipDiscount()).toLocaleString()}\n`);
+        await MissionUtils.Console.print(`내실돈			 ${(payment.getResultHaveToPay()).toLocaleString()}\n`);
     },
 
-    async printResult(buyProductsList, getPromotionsList, payResult) {
-        await MissionUtils.Console.print('==============W 편의점================\n');
+    async printResult(buyProductsList, PromotionItemsList, payment) {
+        await MissionUtils.Console.print('\n==============W 편의점================\n');
         await this.printBuyProductsList(buyProductsList);
-        await this.printGetPromotionsList(getPromotionsList);
-        await this.printPayResult(payResult);
+        await this.printGetPromotionsList(PromotionItemsList);
+        await this.printPayResult(payment);
     }
 }

@@ -4,6 +4,7 @@ export class Product {
     #quantity;
     #promotion;
     #membershipDiscount;
+    #promotionCount; // 증정 개수 저장
 
     constructor(name, price, quantity, promotion) {
         this.#name = name;
@@ -11,10 +12,15 @@ export class Product {
         this.#quantity = quantity;
         this.#promotion = promotion;
         this.#membershipDiscount = 0;
+        this.#promotionCount = 0;
     }
 
     addMembershipDiscount(amount) {
         this.#membershipDiscount += amount;
+    }
+
+    setPromotionCount(quantity) {
+        this.#promotionCount += quantity;
     }
 
     reduceQuantity(amount) {

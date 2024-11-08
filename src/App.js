@@ -9,6 +9,8 @@ import { MissionUtils } from "@woowacourse/mission-utils";
 
 export const productsList = [];
 export const promotionsList = [];
+export const buyItemsList = [];
+export const payment = new Payment();
 
 class App {
   async run() {
@@ -17,6 +19,15 @@ class App {
     await OutputView.printProducts(productsList);
     const buyItems = await InputView.readItem();
     this.processPurchase(buyItems);
+
+    if (payment.IsNotZeroTotalNonPromotionAmount()) { //멤버십 적용 관련 함수
+      const checkMembership = await InputView.checkMembershipDiscount()
+      if (checkMembership === 'N') {
+        payment.initMembershipDiscount();
+      } // 미적용 시 멤버십 할인 금액 0으로 초기화
+    }
+
+    OutputView.printResult(buyItemsList, payment.getPromotionItems(), payment);
   }
 
   async loadData() {
@@ -33,9 +44,8 @@ class App {
   }
 
   processPurchase(buyItems) {
-    const payment = new Payment();
-
     buyItems.forEach((item) => { //item이 구매하려는 항목에 대한 객체
+      buyItemsList.push(item);
       const matchedProducts = productsList.filter((product) => item.name === product.getProdName());
 
       if (matchedProducts.length > 1) {
@@ -66,6 +76,7 @@ class App {
       product.reduceQuantity(item.quantity);
       payment.addPurchaseAmount(product.price, item.quantity);
       payment.addNonPromotionAmount(product.price * item.quantity); // 프로모션 아닌 상품은 나중에 멤버십 할인 계산을 위해 더해놓음
+      payment.addPurchaseCount(item.quantity);
     }
     else if (!product.isRemainProduct(item.quantity)) {
       await MissionUtils.Console.print('[ERROR] 구매하려는 개수만큼 재고가 남아 있지 않습니다. 죄송합니다.')
@@ -98,19 +109,25 @@ class App {
         : requiredQuantityForPromo * promoApplicableCount;
     }
 
-    this.updateProductQuantity(promotionProduct, actualQuantity);
-    payment.addPurchaseAmount(promotionProduct.price, actualQuantity);
-    payment.addPromotionDiscount(promotionProduct.price, promoApplicableCount * freeQuantity);
+    this.updateProductQuantity(promotionProduct, actualQuantity); //수량 업데이트
+    payment.addPromotionItems(item.name, promoApplicableCount * freeQuantity) //총 증정수량 계산
+    payment.addPurchaseCount(actualQuantity); // 총 구매 개수 계산
+    payment.addPurchaseAmount(promotionProduct.getProdPrice(), actualQuantity); //총 금액 계산
+    payment.addPromotionDiscount(promotionProduct.price, promoApplicableCount * freeQuantity); //할인 금액 계산
   }
 
   handlePartialPromotion(item, promotionProduct, matchedProducts, promotion, payment) {
-    const { requiredQuantityForPromo, freeQuantity, promoCycleQuantity } = promotion;
+    const { requiredQuantityForPromo, freeQuantity, promoCycleQuantity } = this.calculatePromotionQuantities(item, promotion);
     const buyPromQuantity = Math.floor(item.quantity / promoCycleQuantity) * requiredQuantityForPromo;
     const buyOriginQuantity = item.quantity - buyPromQuantity;
 
     if (InputView.checkPromoExclusion(item.name, buyOriginQuantity)) {
       this.updateProductQuantity(promotionProduct, buyPromQuantity);
       this.updateProductQuantity(matchedProducts[1], buyOriginQuantity);
+      payment.addPromotionItems(item.name, promoApplicableCount * freeQuantity) //총 증정수량 계산
+      payment.addPurchaseCount(item.quantity); // 총 구매 수량 계산 
+      payment.addPurchaseAmount(promotionProduct.getProdPrice(), item.quantity); //총 구매액 계산
+      payment.addPromotionDiscount(promotionProduct.getProdPrice(), promoApplicableCount * freeQuantity); // 총 행사 할인 계산
     }
   }
 
