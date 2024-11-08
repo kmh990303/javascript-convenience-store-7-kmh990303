@@ -3,12 +3,18 @@ export class Product {
     #price;
     #quantity;
     #promotion;
+    #membershipDiscount;
 
     constructor(name, price, quantity, promotion) {
         this.#name = name;
         this.#price = price;
         this.#quantity = quantity;
         this.#promotion = promotion;
+        this.#membershipDiscount = 0;
+    }
+
+    addMembershipDiscount(amount) {
+        this.#membershipDiscount += amount;
     }
 
     reduceQuantity(amount) {
@@ -16,9 +22,12 @@ export class Product {
     }
 
     isRemainProduct(amount) {
-        return this.#quantity >= amount;
+        return this.#quantity >= amount
     }
 
+    isZeroProduct() {
+        return this.#quantity === 0;
+    }
 
     checkPromotion() {
         if (this.#promotion.includes('탄산2+1')) return { buy: 2, get: 1 };

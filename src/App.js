@@ -35,7 +35,7 @@ class App {
   processPurchase(buyItems) {
     const payment = new Payment();
 
-    buyItems.forEach((item) => {
+    buyItems.forEach((item) => { //item이 구매하려는 항목에 대한 객체
       const matchedProducts = productsList.filter((product) => item.name === product.getProdName());
 
       if (matchedProducts.length > 1) {
@@ -50,12 +50,14 @@ class App {
     const promotionProduct = matchedProducts[0];
     const promotion = this.findPromotionForProduct(promotionProduct);
 
-    if (promotion && promotion.isActive() && promotionProduct.isRemainProduct(item.quantity)) {
+    if (!promotion || !promotion.isActive()) return;
+
+    if (promotionProduct.isRemainProduct(item.quantity)) {
       this.applyPromotion(item, promotionProduct, promotion, payment);
-    } else if (promotion && promotion.isActive() && !promotionProduct.isRemainProduct(item.quantity)) {
+    } else if (!promotionProduct.isZeroProduct()) {
       this.handlePartialPromotion(item, promotionProduct, matchedProducts, promotion, payment);
     } else {
-      // 프로모션 재고가 모두 소진된 경우 처리 (빈 상태)
+      this.handleRegularProduct(item, matchedProducts[1], payment);
     }
   }
 
@@ -63,14 +65,24 @@ class App {
     if (product.isRemainProduct(item.quantity)) {
       product.reduceQuantity(item.quantity);
       payment.addPurchaseAmount(product.price, item.quantity);
+      payment.addNonPromotionAmount(product.price * item.quantity); // 프로모션 아닌 상품은 나중에 멤버십 할인 계산을 위해 더해놓음
     }
-    if (!product.isRemainProduct(item.quantity)) {
+    else if (!product.isRemainProduct(item.quantity)) {
       await MissionUtils.Console.print('[ERROR] 구매하려는 개수만큼 재고가 남아 있지 않습니다. 죄송합니다.')
     }
   }
 
   findPromotionForProduct(product) {
-    return promotionsList.find((promo) => promo.getPromName() === product.getProdPromotion());
+    const productPromotion = product.getProdPromotion().trim();
+
+    const findPromotion = promotionsList.find((promo) => promo.getPromName().trim() === productPromotion);
+
+    if (!findPromotion) {
+      console.log("No matching promotion found.");
+      return undefined;
+    }
+
+    return findPromotion;
   }
 
   applyPromotion(item, promotionProduct, promotion, payment) {
