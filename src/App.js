@@ -21,13 +21,28 @@ class App {
     this.processPurchase(buyItems);
 
     if (payment.IsNotZeroTotalNonPromotionAmount()) { //멤버십 적용 관련 함수
-      const checkMembership = await InputView.checkMembershipDiscount()
-      if (checkMembership === 'N') {
+      const checkGetMembership = await InputView.checkMembershipDiscount()
+      if (!checkGetMembership) {
+        payment.calculateMembershipDiscount();
         payment.initMembershipDiscount();
-      } // 미적용 시 멤버십 할인 금액 0으로 초기화
+        payment.calculateFinalAmount();
+        OutputView.printResult(buyItemsList, payment.getPromotionItems(), payment, 'N');
+      }
+      if (checkGetMembership) {
+        payment.calculateMembershipDiscount();
+        payment.calculateFinalAmount();
+        OutputView.printResult(buyItemsList, payment.getPromotionItems(), payment, 'Y');
+      }
     }
 
-    OutputView.printResult(buyItemsList, payment.getPromotionItems(), payment);
+    const hasOtherItems = await InputView.checkForOtherItems();
+    // if (hasOtherItems) {
+    //   // 새로 구매할 상품이 있을 경우 필요한 로직 수행
+    //   console.log("새로 구매할 상품을 선택해주세요.");
+    //   await this.run(); // 재귀 호출로 새로운 상품을 구매하도록
+    // } else {
+    //   console.log("구매를 종료합니다. 감사합니다.");
+    // }
   }
 
   async loadData() {
@@ -45,8 +60,8 @@ class App {
 
   processPurchase(buyItems) {
     buyItems.forEach((item) => { //item이 구매하려는 항목에 대한 객체
-      buyItemsList.push(item);
       const matchedProducts = productsList.filter((product) => item.name === product.getProdName());
+      buyItemsList.push({ name: item.name, quantity: item.quantity, price: matchedProducts[0].getProdPrice() });
 
       if (matchedProducts.length > 1) {
         this.handlePromotionalProduct(item, matchedProducts, payment);
@@ -74,8 +89,8 @@ class App {
   async handleRegularProduct(item, product, payment) {
     if (product.isRemainProduct(item.quantity)) {
       product.reduceQuantity(item.quantity);
-      payment.addPurchaseAmount(product.price, item.quantity);
-      payment.addNonPromotionAmount(product.price * item.quantity); // 프로모션 아닌 상품은 나중에 멤버십 할인 계산을 위해 더해놓음
+      payment.addPurchaseAmount(product.getProdPrice(), item.quantity);
+      payment.addNonPromotionAmount(product.getProdPrice() * item.quantity); // 프로모션 아닌 상품은 나중에 멤버십 할인 계산을 위해 더해놓음
       payment.addPurchaseCount(item.quantity);
     }
     else if (!product.isRemainProduct(item.quantity)) {
@@ -113,7 +128,7 @@ class App {
     payment.addPromotionItems(item.name, promoApplicableCount * freeQuantity) //총 증정수량 계산
     payment.addPurchaseCount(actualQuantity); // 총 구매 개수 계산
     payment.addPurchaseAmount(promotionProduct.getProdPrice(), actualQuantity); //총 금액 계산
-    payment.addPromotionDiscount(promotionProduct.price, promoApplicableCount * freeQuantity); //할인 금액 계산
+    payment.addPromotionDiscount(promotionProduct.getProdPrice(), promoApplicableCount * freeQuantity); //할인 금액 계산
   }
 
   handlePartialPromotion(item, promotionProduct, matchedProducts, promotion, payment) {

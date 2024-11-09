@@ -13,7 +13,7 @@ export const InputView = {
     },
 
     async checkMembershipDiscount() {
-        const input = await MissionUtils.Console.readLineAsync("\n멤버십 할인을 받으시겠습니까? (Y/N)");
+        const input = await MissionUtils.Console.readLineAsync("\n멤버십 할인을 받으시겠습니까? (Y/N)\n");
         await MissionUtils.Console.print('');
 
         if (input === 'Y') {
@@ -36,7 +36,9 @@ export const InputView = {
     },
 
     async checkForOtherItems() {
-        const input = await MissionUtils.Console.readLineAsync('감사합니다. 구매하고 싶은 다른 상품이 있나요? (Y/N)');
+        await MissionUtils.Console.print('\n감사합니다. 구매하고 싶은 다른 상품이 있나요? (Y/N)\n');
+
+        const input = await MissionUtils.Console.readLineAsync('');
 
         if (input === 'Y') {
             return true;

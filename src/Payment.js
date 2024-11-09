@@ -1,7 +1,7 @@
 const MEMBERSHIP_DISCOUNT_RATE = 0.3;
 const MAX_MEMBERSHIP_DISCOUNT = 8000;
 
-export class Payment {
+export class Payment { // 추가 구매 시 모든 변수 값 초기화하는 메서드 필요!
     #totalPurchaseAmount;
     #promotionDiscount;
     #membershipDiscount;
@@ -42,8 +42,8 @@ export class Payment {
         this.#resultQuantity += quantity;
     }
 
-    addPurchaseAmount(amount) {
-        this.#totalPurchaseAmount += amount;
+    addPurchaseAmount(price, quantity) {
+        this.#resultTotalAmount += price * quantity;
     }
 
     addPromotionDiscount(price, quantity) {
@@ -63,11 +63,12 @@ export class Payment {
     }
 
     calculateFinalAmount() {
-        this.#resultHaveToPay = this.#totalPurchaseAmount - this.#promotionDiscount - this.#membershipDiscount;
+        this.#resultPromDiscount = this.#promotionDiscount;
+        this.#resultHaveToPay = this.#resultTotalAmount - this.#resultPromDiscount - this.#resultMembershipDiscount;
     }
 
     IsNotZeroTotalNonPromotionAmount() {
-        return this.#totalNonPromotionAmount !== 0 ? true : false;
+        return this.#totalNonPromotionAmount !== 0;
     }
 
     getResultQuantity() {
