@@ -36,9 +36,7 @@ export const InputView = {
     },
 
     async checkForOtherItems() {
-        await MissionUtils.Console.print('\n감사합니다. 구매하고 싶은 다른 상품이 있나요? (Y/N)\n');
-
-        const input = await MissionUtils.Console.readLineAsync('');
+        const input = await MissionUtils.Console.readLineAsync('\n감사합니다. 구매하고 싶은 다른 상품이 있나요? (Y/N)\n');
 
         if (input === 'Y') {
             return true;

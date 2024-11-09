@@ -7,14 +7,15 @@ import { Promotion } from "./Promotion.js";
 import { Payment } from "./Payment.js";
 import { MissionUtils } from "@woowacourse/mission-utils";
 
-export const productsList = [];
-export const promotionsList = [];
-export const buyItemsList = [];
-export const payment = new Payment();
-
+let productsList = [];
+let promotionsList = [];
+let buyItemsList = [];
+let payment = new Payment();
+let count = 0;
 class App {
   async run() {
-    await this.loadData();
+    count += 1;
+    if (count === 1) await this.loadData();
     await OutputView.printIntro();
     await OutputView.printProducts(productsList);
     const buyItems = await InputView.readItem();
@@ -26,23 +27,27 @@ class App {
         payment.calculateMembershipDiscount();
         payment.initMembershipDiscount();
         payment.calculateFinalAmount();
-        OutputView.printResult(buyItemsList, payment.getPromotionItems(), payment, 'N');
+        await OutputView.printResult(buyItemsList, payment.getPromotionItems(), payment, 'N');
       }
       if (checkGetMembership) {
         payment.calculateMembershipDiscount();
         payment.calculateFinalAmount();
-        OutputView.printResult(buyItemsList, payment.getPromotionItems(), payment, 'Y');
+        await OutputView.printResult(buyItemsList, payment.getPromotionItems(), payment, 'Y');
       }
     }
 
     const hasOtherItems = await InputView.checkForOtherItems();
-    // if (hasOtherItems) {
-    //   // 새로 구매할 상품이 있을 경우 필요한 로직 수행
-    //   console.log("새로 구매할 상품을 선택해주세요.");
-    //   await this.run(); // 재귀 호출로 새로운 상품을 구매하도록
-    // } else {
-    //   console.log("구매를 종료합니다. 감사합니다.");
-    // }
+
+    if (hasOtherItems) {
+      await MissionUtils.Console.print('');
+      this.initAll();
+      await this.run(); // 재귀 호출로 다시 run 실행
+    }
+  }
+
+  initAll() {
+    buyItemsList = [];
+    payment = new Payment();
   }
 
   async loadData() {
@@ -58,22 +63,22 @@ class App {
     });
   }
 
-  processPurchase(buyItems) {
-    buyItems.forEach((item) => { //item이 구매하려는 항목에 대한 객체
+  async processPurchase(buyItems) {
+    buyItems.forEach(async (item) => { //item이 구매하려는 항목에 대한 객체
       const matchedProducts = productsList.filter((product) => item.name === product.getProdName());
       buyItemsList.push({ name: item.name, quantity: item.quantity, price: matchedProducts[0].getProdPrice() });
 
       if (matchedProducts.length > 1) {
-        this.handlePromotionalProduct(item, matchedProducts, payment);
+        await this.handlePromotionalProduct(item, matchedProducts, payment);
       } else if (matchedProducts.length === 1) {
-        this.handleRegularProduct(item, matchedProducts[0], payment);
+        await this.handleRegularProduct(item, matchedProducts[0], payment);
       }
     });
   }
 
-  handlePromotionalProduct(item, matchedProducts, payment) {
+  async handlePromotionalProduct(item, matchedProducts, payment) {
     const promotionProduct = matchedProducts[0];
-    const promotion = this.findPromotionForProduct(promotionProduct);
+    const promotion = await this.findPromotionForProduct(promotionProduct);
 
     if (!promotion || !promotion.isActive()) return;
 
@@ -82,7 +87,7 @@ class App {
     } else if (!promotionProduct.isZeroProduct()) {
       this.handlePartialPromotion(item, promotionProduct, matchedProducts, promotion, payment);
     } else {
-      this.handleRegularProduct(item, matchedProducts[1], payment);
+      await this.handleRegularProduct(item, matchedProducts[1], payment);
     }
   }
 
@@ -98,13 +103,13 @@ class App {
     }
   }
 
-  findPromotionForProduct(product) {
+  async findPromotionForProduct(product) {
     const productPromotion = product.getProdPromotion().trim();
 
     const findPromotion = promotionsList.find((promo) => promo.getPromName().trim() === productPromotion);
 
     if (!findPromotion) {
-      console.log("No matching promotion found.");
+      await MissionUtils.Console.print("No matching promotion found.");
       return undefined;
     }
 

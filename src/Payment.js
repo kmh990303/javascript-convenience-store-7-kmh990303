@@ -2,9 +2,7 @@ const MEMBERSHIP_DISCOUNT_RATE = 0.3;
 const MAX_MEMBERSHIP_DISCOUNT = 8000;
 
 export class Payment { // 추가 구매 시 모든 변수 값 초기화하는 메서드 필요!
-    #totalPurchaseAmount;
     #promotionDiscount;
-    #membershipDiscount;
     #totalNonPromotionAmount;
 
     #resultQuantity;
@@ -16,9 +14,7 @@ export class Payment { // 추가 구매 시 모든 변수 값 초기화하는 �
     #PromotionItemsList;
 
     constructor() {
-        this.#totalPurchaseAmount = 0;
         this.#promotionDiscount = 0;
-        this.#membershipDiscount = 0;
         this.#totalNonPromotionAmount = 0;
 
         this.#resultQuantity = 0;
