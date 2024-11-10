@@ -56,7 +56,7 @@
 
 <!-- ## ❗ 예외 처리 목록 -->
 
-## 📂 폴더 구조
+
 
 <!-- <h3>📦 tests<br>┣ 📜 AllLottoTest.js<br>┣ 📜 ApplicationTest.js<br>┣ 📜 LottoTest.js<br>┗ 📜 PurchaseAmountTest.js</h3>
 
