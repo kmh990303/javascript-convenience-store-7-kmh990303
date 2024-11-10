@@ -12,36 +12,50 @@ let promotionsList = [];
 let buyItemsList = [];
 let payment = new Payment();
 let count = 0;
+
 class App {
   async run() {
-    count += 1;
-    if (count === 1) await this.loadData();
-    await OutputView.printIntro();
-    await OutputView.printProducts(productsList);
-    const buyItems = await InputView.readItem();
-    this.processPurchase(buyItems);
+    while (true) {
+      count += 1;
+      if (count === 1) await this.loadData();
+      OutputView.printIntro();
+      OutputView.printProducts(productsList);
 
-    if (payment.IsNotZeroTotalNonPromotionAmount()) { //멤버십 적용 관련 함수
-      const checkGetMembership = await InputView.checkMembershipDiscount()
-      if (!checkGetMembership) {
-        payment.calculateMembershipDiscount();
-        payment.initMembershipDiscount();
-        payment.calculateFinalAmount();
-        await OutputView.printResult(buyItemsList, payment.getPromotionItems(), payment, 'N');
+      const buyItems = await InputView.readItem();
+      await this.processPurchase(buyItems);
+
+      if (payment.IsNotZeroTotalNonPromotionAmount()) {
+        const checkGetMembership = await InputView.checkMembershipDiscount()
+        if (!checkGetMembership) {
+          payment.calculateMembershipDiscount();
+          payment.initMembershipDiscount();
+          payment.calculateFinalAmount();
+          OutputView.printResult(buyItemsList, payment.getPromotionItems(), payment, 'N');
+
+          const hasOtherItems = await InputView.checkForOtherItems();
+
+          if (hasOtherItems) {
+            MissionUtils.Console.print('');
+            this.initAll();
+          } else {
+            break;
+          }
+        }
+        if (checkGetMembership) {
+          payment.calculateMembershipDiscount();
+          payment.calculateFinalAmount();
+          OutputView.printResult(buyItemsList, payment.getPromotionItems(), payment, 'Y');
+
+          const hasOtherItems = await InputView.checkForOtherItems();
+
+          if (hasOtherItems) {
+            MissionUtils.Console.print('');
+            this.initAll();
+          } else {
+            break;
+          }
+        }
       }
-      if (checkGetMembership) {
-        payment.calculateMembershipDiscount();
-        payment.calculateFinalAmount();
-        await OutputView.printResult(buyItemsList, payment.getPromotionItems(), payment, 'Y');
-      }
-    }
-
-    const hasOtherItems = await InputView.checkForOtherItems();
-
-    if (hasOtherItems) {
-      await MissionUtils.Console.print('');
-      this.initAll();
-      await this.run(); // 재귀 호출로 다시 run 실행
     }
   }
 
@@ -64,90 +78,93 @@ class App {
   }
 
   async processPurchase(buyItems) {
-    buyItems.forEach(async (item) => { //item이 구매하려는 항목에 대한 객체
+    buyItems.forEach(async (item) => {
       const matchedProducts = productsList.filter((product) => item.name === product.getProdName());
       buyItemsList.push({ name: item.name, quantity: item.quantity, price: matchedProducts[0].getProdPrice() });
 
       if (matchedProducts.length > 1) {
-        await this.handlePromotionalProduct(item, matchedProducts, payment);
+        this.handlePromotionalProduct(item, matchedProducts, payment);
       } else if (matchedProducts.length === 1) {
-        await this.handleRegularProduct(item, matchedProducts[0], payment);
+        this.handleRegularProduct(item, matchedProducts[0], payment);
       }
     });
   }
 
   async handlePromotionalProduct(item, matchedProducts, payment) {
     const promotionProduct = matchedProducts[0];
-    const promotion = await this.findPromotionForProduct(promotionProduct);
+    const promotion = this.findPromotionForProduct(promotionProduct);
 
     if (!promotion || !promotion.isActive()) return;
 
     if (promotionProduct.isRemainProduct(item.quantity)) {
       this.applyPromotion(item, promotionProduct, promotion, payment);
-    } else if (!promotionProduct.isZeroProduct()) {
+      return;
+    }
+    if (!promotionProduct.isRemainProduct(item.quantity) && !promotionProduct.isZeroProduct()) {
       this.handlePartialPromotion(item, promotionProduct, matchedProducts, promotion, payment);
-    } else {
-      await this.handleRegularProduct(item, matchedProducts[1], payment);
+      return;
+    }
+    if (!promotionProduct.isRemainProduct(item.quantity) && promotionProduct.isZeroProduct()) {
+      this.handleRegularProduct(item, matchedProducts[1], payment);
+      return;
     }
   }
 
-  async handleRegularProduct(item, product, payment) {
+  handleRegularProduct(item, product, payment) {
     if (product.isRemainProduct(item.quantity)) {
       product.reduceQuantity(item.quantity);
       payment.addPurchaseAmount(product.getProdPrice(), item.quantity);
-      payment.addNonPromotionAmount(product.getProdPrice() * item.quantity); // 프로모션 아닌 상품은 나중에 멤버십 할인 계산을 위해 더해놓음
+      payment.addNonPromotionAmount(product.getProdPrice() * item.quantity);
       payment.addPurchaseCount(item.quantity);
+
+      return;
     }
     else if (!product.isRemainProduct(item.quantity)) {
-      await MissionUtils.Console.print('[ERROR] 구매하려는 개수만큼 재고가 남아 있지 않습니다. 죄송합니다.')
+      MissionUtils.Console.print('[ERROR] 구매하려는 개수만큼 재고가 남아 있지 않습니다. 죄송합니다.')
+      return;
     }
   }
 
-  async findPromotionForProduct(product) {
+  findPromotionForProduct(product) {
     const productPromotion = product.getProdPromotion().trim();
 
-    const findPromotion = promotionsList.find((promo) => promo.getPromName().trim() === productPromotion);
-
-    if (!findPromotion) {
-      await MissionUtils.Console.print("No matching promotion found.");
-      return undefined;
-    }
+    const findPromotion = promotionsList.find((promo) => promo.getPromName().trim() === productPromotion)
 
     return findPromotion;
   }
 
-  applyPromotion(item, promotionProduct, promotion, payment) {
+  async applyPromotion(item, promotionProduct, promotion, payment) {
     const { promoCycleQuantity, requiredQuantityForPromo, freeQuantity, promoApplicableCount, remainingQuantity } =
       this.calculatePromotionQuantities(item, promotion);
 
     let actualQuantity = item.quantity;
 
     if (remainingQuantity >= requiredQuantityForPromo) {
-      const acceptsFreeItems = InputView.checkForFreeItemOffer(item.name, freeQuantity);
+      const acceptsFreeItems = await InputView.checkForFreeItemOffer(item.name, freeQuantity);
       actualQuantity = acceptsFreeItems
         ? requiredQuantityForPromo * promoApplicableCount + remainingQuantity
         : requiredQuantityForPromo * promoApplicableCount;
     }
 
-    this.updateProductQuantity(promotionProduct, actualQuantity); //수량 업데이트
-    payment.addPromotionItems(item.name, promoApplicableCount * freeQuantity) //총 증정수량 계산
-    payment.addPurchaseCount(actualQuantity); // 총 구매 개수 계산
-    payment.addPurchaseAmount(promotionProduct.getProdPrice(), actualQuantity); //총 금액 계산
-    payment.addPromotionDiscount(promotionProduct.getProdPrice(), promoApplicableCount * freeQuantity); //할인 금액 계산
+    this.updateProductQuantity(promotionProduct, actualQuantity);
+    payment.addPromotionItems(item.name, promoApplicableCount * freeQuantity);
+    payment.addPurchaseCount(actualQuantity);
+    payment.addPurchaseAmount(promotionProduct.getProdPrice(), actualQuantity);
+    payment.addPromotionDiscount(promotionProduct.getProdPrice(), promoApplicableCount * freeQuantity);
   }
 
-  handlePartialPromotion(item, promotionProduct, matchedProducts, promotion, payment) {
-    const { requiredQuantityForPromo, freeQuantity, promoCycleQuantity } = this.calculatePromotionQuantities(item, promotion);
+  async handlePartialPromotion(item, promotionProduct, matchedProducts, promotion, payment) {
+    const { requiredQuantityForPromo, freeQuantity, promoCycleQuantity, promoApplicableCount, remainingQuantity } = this.calculatePromotionQuantities(item, promotion);
     const buyPromQuantity = Math.floor(item.quantity / promoCycleQuantity) * requiredQuantityForPromo;
     const buyOriginQuantity = item.quantity - buyPromQuantity;
 
-    if (InputView.checkPromoExclusion(item.name, buyOriginQuantity)) {
+    if (await InputView.checkPromotionExclusion(item.name, buyOriginQuantity)) {
       this.updateProductQuantity(promotionProduct, buyPromQuantity);
       this.updateProductQuantity(matchedProducts[1], buyOriginQuantity);
-      payment.addPromotionItems(item.name, promoApplicableCount * freeQuantity) //총 증정수량 계산
-      payment.addPurchaseCount(item.quantity); // 총 구매 수량 계산 
-      payment.addPurchaseAmount(promotionProduct.getProdPrice(), item.quantity); //총 구매액 계산
-      payment.addPromotionDiscount(promotionProduct.getProdPrice(), promoApplicableCount * freeQuantity); // 총 행사 할인 계산
+      payment.addPromotionItems(item.name, promoApplicableCount * freeQuantity)
+      payment.addPurchaseCount(item.quantity);
+      payment.addPurchaseAmount(promotionProduct.getProdPrice(), item.quantity);
+      payment.addPromotionDiscount(promotionProduct.getProdPrice(), promoApplicableCount * freeQuantity);
     }
   }
 
@@ -163,8 +180,9 @@ class App {
 
   updateProductQuantity(product, quantity) {
     productsList.forEach((prod) => {
-      if (prod.getProdName() === product.getProdName() && prod.promotion === product.promotion) {
+      if (prod.getProdName() === product.getProdName() && prod.getProdPromotion() === product.getProdPromotion()) {
         prod.reduceQuantity(quantity);
+        return;
       }
     });
   }

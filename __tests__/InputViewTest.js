@@ -33,10 +33,10 @@ describe('InputView 클래스 테스트', () => {
     })
 
 
-    test('checkPromoExclusion 함수 테스트', async () => {
+    test('checkPromotionExclusion 함수 테스트', async () => {
         MissionUtils.Console.readLineAsync.mockResolvedValue('N');
 
-        const result = await InputView.checkPromoExclusion('콜라', 4);
+        const result = await InputView.checkPromotionExclusion('콜라', 4);
 
         expect(result).toBe(false);
     });
